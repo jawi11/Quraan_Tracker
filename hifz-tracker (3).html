@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="حفظي">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1a0f">
+<link rel="manifest" id="pwa-manifest">
+<title>متابع الحفظ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');
+:root{
+  --bg:#0f1a0f;--surf:#162116;--card:#1c2b1c;--bdr:#2a3d2a;
+  --g0:#1c2b1c;--g1:#1e3a1e;--g2:#2d5a2d;--g3:#3d7a3d;--g4:#4a9a4a;--gf:#6fcf6f;
+  --text:#e8f0e8;--dim:#8aaa8a;--muted:#4a6a4a;--gold:#c9a84c;
+  --nav-h:62px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+  --pv-bg:#f5f0e6;
+}
+[data-app-theme="light"]{
+  --bg:#f4f6f4;--surf:#fff;--card:#fff;--bdr:#d8e4d8;
+  --g0:#e8f2e8;--g1:#d4ecd4;--g2:#a8d4a8;--g3:#6aad6a;--g4:#4a9a4a;--gf:#2d7a2d;
+  --text:#1a2e1a;--dim:#4a6a4a;--muted:#7a9a7a;--gold:#8a7020;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + var(--safe-b))}
+
+/* LOADING */
+.loader{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s}
+.loader.hide{opacity:0;pointer-events:none}
+.loader-spin{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--gf);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-size:13px;color:var(--dim)}
+.loader-prog{width:200px;height:4px;background:var(--card);border-radius:4px;overflow:hidden}
+.loader-prog-fill{height:100%;background:var(--gf);width:0;transition:width .3s}
+
+/* HEADER */
+.hdr{background:linear-gradient(160deg,#1c2e1c,#0f1a0f);border-bottom:1px solid var(--bdr);padding:calc(10px + var(--safe-t)) 14px 10px;position:sticky;top:0;z-index:50}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;max-width:480px;margin:0 auto}
+.app-name{font-family:'Amiri',serif;font-size:20px;color:var(--gold)}
+.app-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.tot-badge{background:var(--g1);border:1px solid var(--g2);border-radius:20px;padding:5px 12px;text-align:center;min-width:68px}
+.tot-pct{font-size:13px;font-weight:700;color:var(--gf)}
+.tot-lbl{font-size:9px;color:var(--muted)}
+.bar-wrap{max-width:480px;margin:8px auto 0}
+.bar-track{background:var(--card);border-radius:5px;height:5px;overflow:hidden;border:1px solid var(--bdr)}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--g2),var(--gf));transition:width .5s ease}
+.bar-lbls{display:flex;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--muted)}
+
+/* TABS */
+.tab-panel{display:none;max-width:480px;margin:0 auto;padding:12px 12px 20px}
+.tab-panel.active{display:block}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + var(--safe-b));
+  padding-bottom:var(--safe-b);background:var(--surf);border-top:1px solid var(--bdr);
+  display:flex;z-index:80;max-width:480px;margin:0 auto;
+}
+@media(min-width:481px){.bottom-nav{left:50%;transform:translateX(-50%);width:480px;border-radius:16px 16px 0 0}}
+.bottom-nav::-webkit-scrollbar{display:none}
+.nav-btn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:none;border:none;color:var(--muted);font-family:'Cairo',sans-serif;font-size:8px;cursor:pointer;padding:6px 1px}
+.nav-btn.active{color:var(--gf)}
+.nav-icon{font-size:20px;line-height:1}
+
+.sec-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.sec-title{font-family:'Amiri',serif;font-size:18px;color:var(--gold);margin-bottom:12px}
+
+/* JUZ GRID */
+.juz-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.juz-card{
+  background:var(--card);border:1.5px solid var(--bdr);border-radius:8px;height:64px;cursor:pointer;
+  transition:transform .12s,border-color .25s;position:relative;overflow:hidden;user-select:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;
+}
+.juz-card:active{transform:scale(.9)}
+.juz-fill{position:absolute;bottom:0;left:0;right:0;transition:height .55s cubic-bezier(.4,0,.2,1),background .3s;z-index:0;border-radius:0 0 6px 6px}
+.juz-num{font-size:15px;font-weight:700;position:relative;z-index:1;line-height:1}
+.juz-pct{font-size:8px;font-weight:600;margin-top:2px;position:relative;z-index:1}
+.juz-check{position:absolute;top:3px;right:4px;font-size:8px;color:var(--gf);z-index:2}
+.juz-dots{position:absolute;top:3px;left:4px;display:flex;flex-wrap:wrap;gap:2px;z-index:2;max-width:24px}
+.dot{width:4px;height:4px;border-radius:1px;background:var(--gf);opacity:.6}
+
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.leg{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted)}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* QUICK JUMP */
+.quick-jump{display:flex;gap:8px;margin-bottom:12px}
+.qj-input{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;
+  color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;outline:none}
+.qj-input:focus{border-color:var(--g3)}
+.qj-btn{background:var(--g1);border:1px solid var(--g2);color:var(--gf);border-radius:10px;padding:10px 16px;
+  font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+
+/* TODAY */
+.today-summary{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:14px}
+.today-count{font-size:28px;font-weight:700;color:var(--gf)}
+.today-sub{font-size:11px;color:var(--dim);margin-top:4px}
+.review-list{display:flex;flex-direction:column;gap:8px}
+.review-item{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .2s}
+.review-item:active{transform:scale(.98)}
+.review-item.overdue{border-color:#8a4a4a;background:#1a1212}
+.review-pg{font-size:20px;font-weight:700;color:var(--gold);min-width:44px;text-align:center}
+.review-info{flex:1}
+.review-surah{font-size:12px;color:var(--text)}
+.review-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.review-btn{background:var(--g1);border:1px solid var(--g2);color:var(--gf);border-radius:8px;padding:6px 12px;font-size:11px;font-family:'Cairo',sans-serif;cursor:pointer}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;line-height:1.8}
+
+/* STATS */
+.stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:14px;text-align:center}
+.stat-val{font-size:24px;font-weight:700;color:var(--gf)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px}
+.chart-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:14px}
+.chart-title{font-size:11px;color:var(--dim);margin-bottom:10px}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:80px}
+.chart-bar{flex:1;background:var(--g2);border-radius:3px 3px 0 0;min-height:2px;transition:height .4s;position:relative}
+.chart-bar-lbl{font-size:7px;color:var(--muted);text-align:center;margin-top:4px;overflow:hidden;text-overflow:ellipsis}
+
+/* SEARCH */
+.search-box{width:100%;background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;
+  color:var(--text);font-family:'Cairo',sans-serif;font-size:15px;outline:none;margin-bottom:12px}
+.search-box:focus{border-color:var(--g3)}
+.search-results{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto}
+.search-result{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;
+  cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.search-result:active{background:var(--g1)}
+.sr-page{font-weight:700;color:var(--gold)}
+.sr-surah{font-size:12px;color:var(--dim)}
+.sr-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* SURAHS */
+.surah-filter{width:100%;background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:11px 14px;
+  color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;outline:none;margin-bottom:12px}
+.surah-filter:focus{border-color:var(--g3)}
+.surah-list{display:flex;flex-direction:column;gap:6px}
+.surah-item{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;
+  cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.surah-item:active{transform:scale(.99);border-color:var(--g3)}
+.surah-num{width:32px;height:32px;border-radius:50%;background:var(--g1);border:1px solid var(--g2);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gf);flex-shrink:0}
+.surah-info{flex:1;min-width:0}
+.surah-name{font-family:'Amiri',serif;font-size:17px;color:var(--gold);line-height:1.2}
+.surah-meta{font-size:10px;color:var(--muted);margin-top:3px}
+.surah-prog{min-width:44px;text-align:left}
+.surah-pct{font-size:13px;font-weight:700;color:var(--gf)}
+.surah-pg-lbl{font-size:8px;color:var(--muted)}
+
+/* THEME SETTINGS */
+.theme-swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0}
+.swatch.active{border-color:var(--gf);box-shadow:0 0 0 2px var(--bg)}
+.swatch-cream{background:#f5f0e6}.swatch-white{background:#fffef8;border:1px solid #ddd}
+.swatch-sepia{background:#e8dcc8}.swatch-dark{background:#1a1410}
+.mode-toggle{display:flex;gap:6px}
+.mode-btn{flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--card);
+  color:var(--dim);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;text-align:center}
+.mode-btn.active{background:var(--g1);border-color:var(--gf);color:var(--gf)}
+
+/* SETTINGS */
+.setting-group{background:var(--card);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.setting-item{padding:14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.setting-item:last-child{border-bottom:none}
+.setting-label{font-size:13px}
+.setting-desc{font-size:10px;color:var(--muted);margin-top:2px}
+.setting-btn{background:var(--g1);border:1px solid var(--g2);color:var(--gf);border-radius:8px;padding:8px 14px;
+  font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap}
+.setting-btn.danger{background:#2a1212;border-color:#6a3030;color:#e88}
+.backup-list{max-height:150px;overflow-y:auto}
+.backup-item{padding:10px 14px;border-bottom:1px solid var(--bdr);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
+.backup-restore{background:var(--card);border:1px solid var(--bdr);color:var(--text);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif}
+.offline-badge{display:inline-block;background:var(--g1);border:1px solid var(--g2);border-radius:12px;padding:3px 10px;font-size:10px;color:var(--gf);margin-top:6px}
+.offline-badge.off{background:#2a1a1a;border-color:#5a3030;color:#c88}
+
+/* ─── JUZ PAGES VIEW ─── */
+.view{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;
+  transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);padding-bottom:var(--safe-b)}
+.view.open{transform:translateX(0)}
+.v-hdr{background:var(--surf);border-bottom:1px solid var(--bdr);padding:calc(10px + var(--safe-t)) 14px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.back{background:var(--card);border:1px solid var(--bdr);color:var(--text);width:34px;height:34px;border-radius:50%;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.v-title{font-family:'Amiri',serif;font-size:18px;color:var(--gold);flex:1}
+.v-badge{background:var(--g1);border:1px solid var(--g2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--gf);flex-shrink:0}
+.j-prog-wrap{background:var(--surf);padding:8px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.j-prog-track{background:var(--card);border-radius:4px;height:4px;overflow:hidden}
+.j-prog-fill{height:100%;background:linear-gradient(90deg,var(--g2),var(--gf));transition:width .4s}
+.j-prog-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--muted)}
+.v-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px}
+.pages-hdr{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.pages-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.page-card{background:var(--card);border:1.5px solid var(--bdr);border-radius:8px;padding:10px 6px 8px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.page-card:active{transform:scale(.92)}
+.page-card.mem{background:var(--g2);border-color:var(--gf);box-shadow:0 0 8px rgba(111,207,111,.2)}
+.page-num{font-size:18px;font-weight:700}
+.page-surah{font-size:8px;color:var(--muted);margin-top:3px;line-height:1.3}
+.page-check{position:absolute;top:3px;left:4px;font-size:10px;color:var(--gf);opacity:0}
+.page-card.mem .page-check{opacity:1}
+.page-card.mem .page-num{color:var(--gf)}
+.page-card.mem .page-surah{color:var(--g4)}
+.bulk-bar{position:sticky;bottom:0;background:var(--surf);border-top:1px solid var(--bdr);padding:8px 14px calc(8px + var(--safe-b));display:flex;gap:7px;z-index:20}
+.bulk-btn{flex:1;padding:11px;border-radius:10px;border:1.5px solid;font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.bulk-all{background:var(--g1);border-color:var(--gf);color:var(--gf)}
+.bulk-clear{background:var(--card);border-color:var(--bdr);color:var(--dim)}
+
+/* ─── PAGE READER ─── */
+.pv{position:fixed;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.pv.open{transform:translateY(0)}
+.pv-hdr{background:rgba(15,26,15,.95);border-bottom:1px solid var(--bdr);padding:calc(8px + var(--safe-t)) 10px 8px;
+  display:flex;align-items:center;gap:8px;flex-shrink:0;z-index:10;backdrop-filter:blur(8px)}
+.pv-info{flex:1;min-width:0}
+.pv-num{font-family:'Amiri',serif;font-size:16px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-surah{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-nav-btn{background:var(--card);border:1px solid var(--bdr);color:var(--text);width:36px;height:36px;border-radius:50%;
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pv-nav-btn:disabled{opacity:.3;cursor:default}
+.pv-close{background:var(--card);border:1px solid var(--bdr);color:var(--text);width:36px;height:36px;border-radius:50%;
+  font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Zoom viewport */
+.pv-viewport{flex:1;position:relative;overflow:hidden;touch-action:none;background:var(--pv-bg);transition:background .3s}
+.pv-viewport.pv-bg-cream{--pv-bg:#f5f0e6}
+.pv-viewport.pv-bg-white{--pv-bg:#fffef8}
+.pv-viewport.pv-bg-sepia{--pv-bg:#e8dcc8}
+.pv-viewport.pv-bg-dark{--pv-bg:#1a1410}
+.pv-viewport.pv-night.pv-use-png .pv-img{filter:invert(1) hue-rotate(180deg) brightness(1.05)}
+.pv-viewport.pv-night.pv-use-svg .pv-img{filter:none}
+.pv-viewport.pv-night{background:#0d0d0d!important}
+.pv-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  transform-origin:center center;will-change:transform}
+.pv-img{width:100%;height:auto;max-height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none;
+  transition:filter .3s}
+.pv-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8a7a5a;font-size:13px;background:var(--pv-bg);z-index:5}
+.pv-fallback{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:30px;text-align:center;color:var(--dim);font-size:13px;line-height:1.8;background:var(--pv-bg);z-index:5}
+.pv-fallback.show{display:flex}
+.pv-fallback a{color:var(--gold)}
+
+.pv-footer{background:rgba(15,26,15,.95);border-top:1px solid var(--bdr);padding:8px 12px calc(8px + var(--safe-b));
+  display:flex;flex-direction:column;gap:8px;flex-shrink:0;backdrop-filter:blur(8px)}
+.pv-actions{display:flex;gap:8px}
+.pv-mem-btn{flex:1;padding:13px;border-radius:10px;border:1.5px solid var(--gf);background:var(--g1);color:var(--gf);
+  font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-align:center}
+.pv-mem-btn.active{background:var(--g2)}
+.pv-review-btn{padding:13px 16px;border-radius:10px;border:1.5px solid var(--gold);background:transparent;color:var(--gold);
+  font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pv-theme-bar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}
+.pv-theme-btn{padding:6px 10px;border-radius:8px;border:1px solid var(--bdr);background:var(--card);color:var(--dim);
+  font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer}
+.pv-theme-btn.active{background:var(--g1);border-color:var(--gf);color:var(--gf)}
+.pv-zoom-hint{text-align:center;font-size:9px;color:var(--muted)}
+
+.reset-btn{display:block;margin:22px auto 0;background:transparent;border:1px solid var(--bdr);color:var(--muted);
+  font-family:'Cairo',sans-serif;font-size:11px;padding:7px 18px;border-radius:20px;cursor:pointer}
+
+.toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--g2);border:1px solid var(--gf);color:var(--text);padding:9px 20px;border-radius:30px;font-size:12px;
+  opacity:0;transition:all .28s;z-index:500;white-space:nowrap;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.pv.open ~ .toast{bottom:calc(16px + var(--safe-b))}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div class="loader-spin"></div>
+  <div class="loader-txt" id="loader-txt">جارٍ تحميل بيانات القرآن...</div>
+  <div class="loader-prog"><div class="loader-prog-fill" id="loader-prog"></div></div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr" id="main-hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="app-name">متابع الحفظ</div>
+      <div class="app-sub">المصحف الشريف — ٦٠٤ صفحة · ٣٠ جزءاً</div>
+    </div>
+    <div class="tot-badge">
+      <div class="tot-pct" id="tot-pct">0%</div>
+      <div class="tot-lbl">من المصحف</div>
+    </div>
+  </div>
+  <div class="bar-wrap">
+    <div class="bar-track"><div class="bar-fill" id="tot-bar" style="width:0%"></div></div>
+    <div class="bar-lbls"><span id="tot-pg-lbl">0 / 604 صفحة</span><span id="tot-jz-lbl">0 / 30 جزء مكتمل</span></div>
+  </div>
+</div>
+
+<!-- TAB: HOME -->
+<div class="tab-panel active" id="tab-home">
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--card);border:1px solid var(--bdr)"></div>لم يُحفظ</div>
+    <div class="leg"><div class="leg-dot" style="background:#1e3a1e"></div>بدأ الحفظ</div>
+    <div class="leg"><div class="leg-dot" style="background:#2d5a2d"></div>النصف فأكثر</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--g3)"></div>مكتمل ✓</div>
+  </div>
+  <div class="quick-jump">
+    <input class="qj-input" id="quick-jump-input" type="number" inputmode="numeric" min="1" max="604" placeholder="انتقل إلى صفحة...">
+    <button class="qj-btn" onclick="quickJump()">انتقال</button>
+  </div>
+  <p class="sec-lbl">اضغط على الجزء لعرض صفحاته</p>
+  <div class="juz-grid" id="juz-grid"></div>
+  <button class="reset-btn" onclick="confirmReset()">↺ إعادة تعيين الكل</button>
+</div>
+
+<!-- TAB: TODAY -->
+<div class="tab-panel" id="tab-today">
+  <div class="sec-title">📅 مراجعة اليوم</div>
+  <div class="today-summary">
+    <div class="today-count" id="today-count">0</div>
+    <div class="today-sub" id="today-sub">صفحة للمراجعة اليوم</div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+</div>
+
+<!-- TAB: STATS -->
+<div class="tab-panel" id="tab-stats">
+  <div class="sec-title">📊 الإحصائيات</div>
+  <div class="stat-cards">
+    <div class="stat-card"><div class="stat-val" id="stat-week">0</div><div class="stat-lbl">صفحة هذا الأسبوع</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-month">0</div><div class="stat-lbl">صفحة هذا الشهر</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-streak">0</div><div class="stat-lbl">أيام متتالية</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-reviewed">0</div><div class="stat-lbl">مراجعات هذا الأسبوع</div></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">الحفظ — آخر ٧ أيام</div>
+    <div class="chart-bars" id="chart-week"></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">الحفظ — آخر ٤ أسابيع</div>
+    <div class="chart-bars" id="chart-month"></div>
+  </div>
+</div>
+
+<!-- TAB: SURAHS -->
+<div class="tab-panel" id="tab-surahs">
+  <div class="sec-title">📜 سور القرآن</div>
+  <input class="surah-filter" id="surah-filter" placeholder="ابحث عن سورة..." oninput="filterSurahs()">
+  <div class="surah-list" id="surah-list"></div>
+</div>
+
+<!-- TAB: SEARCH -->
+<div class="tab-panel" id="tab-search">
+  <div class="sec-title">🔍 البحث</div>
+  <input class="search-box" id="search-input" placeholder="ابحث برقم الصفحة أو اسم السورة..." oninput="doSearch()" autocomplete="off">
+  <div class="search-results" id="search-results"></div>
+</div>
+
+<!-- TAB: SETTINGS -->
+<div class="tab-panel" id="tab-settings">
+  <div class="sec-title">⚙️ الإعدادات</div>
+  <div class="setting-group">
+    <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div><div class="setting-label">مظهر التطبيق</div><div class="setting-desc">الوضع الداكن أو الفاتح لواجهة التطبيق</div></div>
+      <div class="mode-toggle">
+        <button class="mode-btn" id="app-theme-dark" onclick="setAppTheme('dark')">🌙 داكن</button>
+        <button class="mode-btn" id="app-theme-light" onclick="setAppTheme('light')">☀️ فاتح</button>
+      </div>
+    </div>
+    <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div><div class="setting-label">خلفية صفحات المصحف</div><div class="setting-desc">لقراءة أوضح — النص أسود على خلفية فاتحة</div></div>
+      <div class="theme-swatches">
+        <div class="swatch swatch-cream active" id="sw-cream" title="كريمي" onclick="setPageBg('cream')"></div>
+        <div class="swatch swatch-white" id="sw-white" title="أبيض" onclick="setPageBg('white')"></div>
+        <div class="swatch swatch-sepia" id="sw-sepia" title="بني فاتح" onclick="setPageBg('sepia')"></div>
+        <div class="swatch swatch-dark" id="sw-dark" title="داكن" onclick="setPageBg('dark')"></div>
+      </div>
+    </div>
+    <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div><div class="setting-label">وضع قراءة الصفحات</div><div class="setting-desc">نهاري للقراءة العادية · ليلي يعكس الألوان للقراءة في الظلام</div></div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="page-mode-day" onclick="setPageMode('day')">☀️ نهاري</button>
+        <button class="mode-btn" id="page-mode-night" onclick="setPageMode('night')">🌙 ليلي</button>
+      </div>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-item">
+      <div><div class="setting-label">حالة الاتصال</div><div class="setting-desc" id="online-status">متصل</div></div>
+      <span class="offline-badge" id="offline-badge">● متصل</span>
+    </div>
+    <div class="setting-item">
+      <div><div class="setting-label">تخزين الصفحات للعمل دون اتصال</div><div class="setting-desc" id="cache-status">0 صفحة مخزّنة</div></div>
+      <button class="setting-btn" onclick="cacheAllMemorized()">تخزين المحفوظ</button>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-item">
+      <div><div class="setting-label">تصدير البيانات</div><div class="setting-desc">حفظ نسخة JSON من تقدّمك</div></div>
+      <button class="setting-btn" onclick="exportData()">تصدير</button>
+    </div>
+    <div class="setting-item">
+      <div><div class="setting-label">استيراد البيانات</div><div class="setting-desc">استعادة من ملف JSON</div></div>
+      <button class="setting-btn" onclick="document.getElementById('import-file').click()">استيراد</button>
+      <input type="file" id="import-file" accept=".json,application/json" onchange="importData(event)">
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-item" style="flex-direction:column;align-items:stretch">
+      <div class="setting-label" style="margin-bottom:8px">النسخ الاحتياطي التلقائي</div>
+      <div class="backup-list" id="backup-list"></div>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-item">
+      <div><div class="setting-label">تثبيت التطبيق</div><div class="setting-desc">أضِف إلى الشاشة الرئيسية (PWA)</div></div>
+      <button class="setting-btn" id="install-btn" onclick="installPWA()" style="display:none">تثبيت</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="nav-icon">📖</span>أجزاء</button>
+  <button class="nav-btn" data-tab="surahs" onclick="switchTab('surahs')"><span class="nav-icon">📜</span>سور</button>
+  <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="nav-icon">📅</span>اليوم</button>
+  <button class="nav-btn" data-tab="search" onclick="switchTab('search')"><span class="nav-icon">🔍</span>بحث</button>
+  <button class="nav-btn" data-tab="stats" onclick="switchTab('stats')"><span class="nav-icon">📊</span>إحصاء</button>
+  <button class="nav-btn" data-tab="settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>إعدادات</button>
+</nav>
+
+<!-- JUZ VIEW -->
+<div class="view" id="juz-view">
+  <div class="v-hdr">
+    <button class="back" onclick="closeJuzView()">←</button>
+    <div class="v-title" id="v-title">الجزء ١</div>
+    <div class="v-badge" id="v-badge">0%</div>
+  </div>
+  <div class="j-prog-wrap">
+    <div class="j-prog-track"><div class="j-prog-fill" id="j-prog" style="width:0%"></div></div>
+    <div class="j-prog-lbls"><span id="j-prog-lbl">0 صفحة محفوظة</span><span id="j-total-lbl">من 20 صفحة</span></div>
+  </div>
+  <div class="v-scroll">
+    <p class="pages-hdr">صفحات الجزء — اضغط على الصفحة لعرضها</p>
+    <div class="pages-grid" id="pages-grid"></div>
+    <div class="bulk-bar">
+      <button class="bulk-btn bulk-clear" onclick="bulkSetJuz(false)">مسح الجزء كله</button>
+      <button class="bulk-btn bulk-all" onclick="bulkSetJuz(true)">حفظ الجزء كله ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE READER -->
+<div class="pv" id="page-view">
+  <div class="pv-hdr">
+    <button class="pv-nav-btn" id="pv-prev" onclick="navPage(-1)">→</button>
+    <div class="pv-info">
+      <div class="pv-num" id="pv-num">صفحة ١</div>
+      <div class="pv-surah" id="pv-surah">...</div>
+    </div>
+    <button class="pv-nav-btn" id="pv-next" onclick="navPage(1)">←</button>
+    <button class="pv-close" onclick="closePageView()">✕</button>
+  </div>
+  <div class="pv-viewport pv-bg-cream" id="pv-viewport">
+    <div class="pv-canvas" id="pv-canvas">
+      <img class="pv-img" id="pv-img" alt="صفحة المصحف" draggable="false">
+    </div>
+    <div class="pv-loading" id="pv-loading">جارٍ تحميل الصفحة...</div>
+    <div class="pv-fallback" id="pv-fallback">
+      تعذّر تحميل الصورة.<br>
+      <a id="pv-fallback-link" target="_blank">عرض في quran.com</a>
+    </div>
+  </div>
+  <div class="pv-footer">
+    <div class="pv-actions">
+      <button class="pv-mem-btn" id="pv-mem-btn" onclick="toggleCurrentPage()">✓ تم الحفظ</button>
+      <button class="pv-review-btn" id="pv-review-btn" onclick="markReviewed()">✓ راجعت</button>
+    </div>
+    <div class="pv-theme-bar">
+      <button class="pv-theme-btn" id="pv-quick-day" onclick="setPageMode('day')">☀️ نهاري</button>
+      <button class="pv-theme-btn" id="pv-quick-night" onclick="setPageMode('night')">🌙 ليلي</button>
+      <button class="pv-theme-btn" onclick="setPageBg('cream')">كريمي</button>
+      <button class="pv-theme-btn" onclick="setPageBg('white')">أبيض</button>
+    </div>
+    <div class="pv-zoom-hint">قرّب/بعّد بإصبعين · اسحب أثناء التكبير · اسحب يمين/يسار للتنقل</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONSTANTS & STATE
+   ═══════════════════════════════════════════ */
+const TOTAL_PAGES = 604;
+const TOTAL_JUZ = 30;
+const AR = n => n.toLocaleString('ar-EG');
+const AR_JUZ = ['١','٢','٣','٤','٥','٦','٧','٨','٩','١٠','١١','١٢','١٣','١٤','١٥','١٦','١٧','١٨','١٩','٢٠','٢١','٢٢','٢٣','٢٤','٢٥','٢٦','٢٧','٢٨','٢٩','٣٠'];
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60, 90];
+const API = 'https://api.quran.com/api/v4';
+const IMG_PRIMARY = n => {
+  const p = String(n).padStart(3,'0');
+  return `https://cdn.jsdelivr.net/gh/tarekeldeeb/madina_images@w1024/w1024_page${p}.png`;
+};
+const IMG_FALLBACKS = n => {
+  const p = String(n).padStart(3,'0');
+  return [
+    `https://cdn.jsdelivr.net/gh/NeaByteLab/Quran-Data@main/public/mushaf/ksu-hafs/${p}.png`,
+    `https://quran.islam-db.com/public/data/pages/quranpages_1024/images/page${p}.png`,
+    `https://api.islamic.app/v1/mushaf/page/${n}.svg?theme=light&width=900`
+  ];
+};
+
+const JUZ_START = [1,22,42,62,82,102,122,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
+const JUZ_END   = [21,41,61,81,101,121,141,161,181,200,221,241,261,281,301,321,341,361,381,401,421,441,461,481,501,521,541,561,581,604];
+
+let PAGE_META = {};
+let CHAPTERS = {};
+let SURAHS = [];
+let JUZ = [];
+let MEM = {};
+let HISTORY = [];
+let BACKUPS = [];
+let SETTINGS = { appTheme:'dark', pageBg:'cream', pageMode:'day' };
+let curJuz = null, curPage = null;
+let deferredInstall = null;
+
+/* Zoom state */
+let zoom = 1, panX = 0, panY = 0;
+let lastDist = 0, lastPan = {x:0,y:0}, isPanning = false;
+let swipeStart = null;
+
+/* ═══════════════════════════════════════════
+   STORAGE
+   ═══════════════════════════════════════════ */
+function loadStorage(){
+  try {
+    const raw = JSON.parse(localStorage.getItem('hifz_data_v2') || '{}');
+    MEM = raw.mem || {};
+    HISTORY = raw.history || [];
+    // Migrate v1
+    const old = JSON.parse(localStorage.getItem('hifz_pages_v1') || '{}');
+    Object.keys(old).forEach(p => {
+      if(!MEM[p]) MEM[p] = { m:true, d: Date.now(), r:[], nr: Date.now()+86400000 };
+    });
+    PAGE_META = JSON.parse(localStorage.getItem('hifz_meta_v2') || '{}');
+    BACKUPS = JSON.parse(localStorage.getItem('hifz_backups_v2') || '[]');
+    SETTINGS = Object.assign(SETTINGS, JSON.parse(localStorage.getItem('hifz_settings_v2') || '{}'));
+  } catch(e){ MEM={}; HISTORY=[]; PAGE_META={}; BACKUPS=[]; }
+}
+
+function saveSettings(){
+  localStorage.setItem('hifz_settings_v2', JSON.stringify(SETTINGS));
+}
+
+function applySettings(){
+  document.documentElement.setAttribute('data-app-theme', SETTINGS.appTheme || 'dark');
+  document.getElementById('app-theme-dark')?.classList.toggle('active', SETTINGS.appTheme !== 'light');
+  document.getElementById('app-theme-light')?.classList.toggle('active', SETTINGS.appTheme === 'light');
+  ['cream','white','sepia','dark'].forEach(bg=>{
+    document.getElementById('sw-'+bg)?.classList.toggle('active', SETTINGS.pageBg === bg);
+  });
+  document.getElementById('page-mode-day')?.classList.toggle('active', SETTINGS.pageMode !== 'night');
+  document.getElementById('page-mode-night')?.classList.toggle('active', SETTINGS.pageMode === 'night');
+  applyPageViewportTheme();
+}
+
+function applyPageViewportTheme(){
+  const vp = document.getElementById('pv-viewport');
+  if(!vp) return;
+  vp.classList.remove('pv-bg-cream','pv-bg-white','pv-bg-sepia','pv-bg-dark','pv-night');
+  vp.classList.add('pv-bg-' + (SETTINGS.pageBg || 'cream'));
+  if(SETTINGS.pageMode === 'night') vp.classList.add('pv-night');
+  document.getElementById('pv-quick-day')?.classList.toggle('active', SETTINGS.pageMode !== 'night');
+  document.getElementById('pv-quick-night')?.classList.toggle('active', SETTINGS.pageMode === 'night');
+  const meta = document.querySelector('meta[name=theme-color]');
+  if(meta) meta.content = SETTINGS.appTheme === 'light' ? '#f4f6f4' : '#0f1a0f';
+}
+
+function setAppTheme(t){
+  SETTINGS.appTheme = t;
+  saveSettings(); applySettings();
+}
+
+function setPageBg(bg){
+  SETTINGS.pageBg = bg;
+  saveSettings(); applySettings();
+}
+
+function setPageMode(mode){
+  SETTINGS.pageMode = mode;
+  saveSettings(); applySettings();
+  if(curPage) loadPageImage(curPage);
+}
+
+function saveStorage(){
+  localStorage.setItem('hifz_data_v2', JSON.stringify({ mem: MEM, history: HISTORY }));
+  autoBackup();
+}
+
+function autoBackup(){
+  const snap = { mem: MEM, history: HISTORY, date: Date.now() };
+  BACKUPS.unshift(snap);
+  if(BACKUPS.length > 10) BACKUPS = BACKUPS.slice(0, 10);
+  localStorage.setItem('hifz_backups_v2', JSON.stringify(BACKUPS));
+  renderBackups();
+}
+
+function saveMeta(){
+  localStorage.setItem('hifz_meta_v2', JSON.stringify(PAGE_META));
+}
+
+function isMem(p){ return !!(MEM[p] && MEM[p].m); }
+
+function setMem(p, v){
+  const now = Date.now();
+  if(v){
+    MEM[p] = MEM[p] || {};
+    MEM[p].m = true;
+    MEM[p].d = MEM[p].d || now;
+    MEM[p].r = MEM[p].r || [];
+    MEM[p].nr = now + REVIEW_INTERVALS[0]*86400000;
+    addHistory('mem', p);
+  } else {
+    delete MEM[p];
+    addHistory('unmem', p);
+  }
+}
+
+function addHistory(type, page){
+  HISTORY.push({ t:type, p:+page, d: Date.now() });
+  if(HISTORY.length > 2000) HISTORY = HISTORY.slice(-1500);
+}
+
+function markReviewedPage(p){
+  p = p || curPage;
+  if(!p || !isMem(p)) return;
+  const now = Date.now();
+  const entry = MEM[p];
+  entry.r = entry.r || [];
+  entry.r.push(now);
+  const idx = Math.min(entry.r.length, REVIEW_INTERVALS.length-1);
+  entry.nr = now + REVIEW_INTERVALS[idx]*86400000;
+  entry.lr = now;
+  addHistory('review', p);
+  saveStorage();
+}
+
+function markReviewed(){
+  markReviewedPage(curPage);
+  showToast('تم تسجيل المراجعة ✓');
+  updatePageViewUI();
+  if(document.getElementById('tab-today').classList.contains('active')) renderToday();
+}
+
+/* ═══════════════════════════════════════════
+   QURAN API — load metadata dynamically
+   ═══════════════════════════════════════════ */
+function pageToJuz(p){
+  for(let i=0;i<TOTAL_JUZ;i++) if(p>=JUZ_START[i] && p<=JUZ_END[i]) return i+1;
+  return 1;
+}
+
+function buildJuzStructure(){
+  JUZ = [];
+  for(let i=0;i<TOTAL_JUZ;i++){
+    const pages = [];
+    for(let p=JUZ_START[i]; p<=JUZ_END[i]; p++){
+      const meta = PAGE_META[p] || { surahName:'...', juz:i+1 };
+      pages.push({ p, s: meta.surahName });
+    }
+    JUZ.push({ j:i+1, pages });
+  }
+}
+
+async function fetchChapters(){
+  const cached = localStorage.getItem('hifz_chapters_v3');
+  if(cached){
+    const data = JSON.parse(cached);
+    CHAPTERS = data.chapters;
+    SURAHS = data.list;
+    return;
+  }
+  const res = await fetch(`${API}/chapters?language=ar`);
+  const data = await res.json();
+  CHAPTERS = {};
+  SURAHS = [];
+  data.chapters.forEach(c => {
+    CHAPTERS[c.id] = {
+      id: c.id,
+      name: c.name_arabic,
+      pageStart: c.pages[0],
+      pageEnd: c.pages[1],
+      verses: c.verses_count,
+      place: c.revelation_place
+    };
+    SURAHS.push(CHAPTERS[c.id]);
+  });
+  localStorage.setItem('hifz_chapters_v3', JSON.stringify({ chapters: CHAPTERS, list: SURAHS }));
+}
+
+async function fetchPageMeta(page){
+  if(PAGE_META[page]) return PAGE_META[page];
+  try {
+    const res = await fetch(`${API}/verses/by_page/${page}?language=ar&words=false&per_page=1`);
+    const data = await res.json();
+    const v = data.verses && data.verses[0];
+    if(v){
+      const meta = { surahId: v.chapter_id, surahName: CHAPTERS[v.chapter_id]?.name || '...', juz: pageToJuz(page) };
+      PAGE_META[page] = meta;
+      return meta;
+    }
+  } catch(e){}
+  PAGE_META[page] = { surahName:'...', juz: pageToJuz(page) };
+  return PAGE_META[page];
+}
+
+async function loadAllMeta(onProgress){
+  const missing = [];
+  for(let p=1; p<=TOTAL_PAGES; p++) if(!PAGE_META[p]) missing.push(p);
+  if(!missing.length){ buildJuzStructure(); return; }
+
+  const batchSize = 10;
+  for(let i=0; i<missing.length; i+=batchSize){
+    const batch = missing.slice(i, i+batchSize);
+    await Promise.all(batch.map(p => fetchPageMeta(p)));
+    onProgress(Math.round(((i+batchSize)/missing.length)*100));
+    if(i % 50 === 0) saveMeta();
+  }
+  saveMeta();
+  buildJuzStructure();
+}
+
+function getSurahForPage(page){
+  for(const id in CHAPTERS){
+    const ch = CHAPTERS[id];
+    if(page >= ch.pageStart && page <= ch.pageEnd) return ch;
+  }
+  return null;
+}
+
+function getSurahName(page){
+  const ch = getSurahForPage(page);
+  if(ch) return ch.name;
+  return PAGE_META[page]?.surahName || '...';
+}
+
+function getSurahProgress(ch){
+  let total = 0, mem = 0;
+  for(let p = ch.pageStart; p <= ch.pageEnd; p++){ total++; if(isMem(p)) mem++; }
+  return { total, mem, pct: total ? Math.round((mem/total)*100) : 0 };
+}
+
+function parseArNum(str){
+  return str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+            .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+
+function normalizeArabic(str){
+  return str.replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+    .replace(/[أإآٱ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').trim();
+}
+
+function getJuzForPage(page){
+  return pageToJuz(page);
+}
+
+/* ═══════════════════════════════════════════
+   PAGE IMAGES
+   ═══════════════════════════════════════════ */
+function getPageImgSources(pageNum){
+  const p = String(pageNum).padStart(3,'0');
+  if(SETTINGS.pageMode === 'night'){
+    return [
+      `https://api.islamic.app/v1/mushaf/page/${pageNum}.svg?theme=dark&width=900`,
+      IMG_PRIMARY(pageNum),
+      ...IMG_FALLBACKS(pageNum).slice(0, 2)
+    ];
+  }
+  return [IMG_PRIMARY(pageNum), ...IMG_FALLBACKS(pageNum)];
+}
+
+function loadPageImage(pageNum){
+  const img = document.getElementById('pv-img');
+  const loading = document.getElementById('pv-loading');
+  const fallback = document.getElementById('pv-fallback');
+  const sources = getPageImgSources(pageNum);
+
+  loading.style.display = 'flex';
+  fallback.classList.remove('show');
+  img.style.display = 'none';
+  img.onload = null;
+  img.onerror = null;
+  resetZoom();
+
+  function trySource(idx){
+    if(idx >= sources.length){
+      loading.style.display = 'none';
+      fallback.classList.add('show');
+      return;
+    }
+    const src = sources[idx];
+    img.onload = () => {
+      loading.style.display = 'none';
+      img.style.display = 'block';
+      const vp = document.getElementById('pv-viewport');
+      vp.classList.toggle('pv-use-svg', src.includes('.svg'));
+      vp.classList.toggle('pv-use-png', !src.includes('.svg'));
+      if('caches' in window){
+        caches.open('hifz-pages-v2').then(c =>
+          fetch(src).then(r => { if(r.ok) c.put(src, r.clone()); }).catch(()=>{})
+        );
+      }
+    };
+    img.onerror = () => trySource(idx + 1);
+    img.src = src;
+  }
+  trySource(0);
+}
+
+async function cacheAllMemorized(){
+  const pages = Object.keys(MEM).filter(p => isMem(p));
+  if(!pages.length){ showToast('لا توجد صفحات محفوظة'); return; }
+  showToast(`جارٍ تخزين ${AR(pages.length)} صفحة...`);
+  let done = 0;
+  const cache = await caches.open('hifz-pages-v2');
+  for(const p of pages){
+    const src = IMG_PRIMARY(+p);
+    try { await cache.add(src); done++; } catch(e){
+      for(const fb of IMG_FALLBACKS(+p)){
+        try { await cache.add(fb); done++; break; } catch(e2){}
+      }
+    }
+  }
+  updateCacheStatus();
+  showToast(`تم تخزين ${AR(done)} صفحة للعمل دون اتصال`);
+}
+
+async function updateCacheStatus(){
+  if(!('caches' in window)){ document.getElementById('cache-status').textContent='غير مدعوم'; return; }
+  const cache = await caches.open('hifz-pages-v2');
+  const keys = await cache.keys();
+  document.getElementById('cache-status').textContent = `${AR(keys.length)} صفحة مخزّنة`;
+}
+
+/* ═══════════════════════════════════════════
+   ZOOM & PAN
+   ═══════════════════════════════════════════ */
+function applyTransform(){
+  document.getElementById('pv-canvas').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+}
+
+function resetZoom(){
+  zoom = 1; panX = 0; panY = 0;
+  applyTransform();
+}
+
+function setupZoomPan(){
+  const vp = document.getElementById('pv-viewport');
+  vp.addEventListener('touchstart', onTouchStart, {passive:false});
+  vp.addEventListener('touchmove', onTouchMove, {passive:false});
+  vp.addEventListener('touchend', onTouchEnd);
+  vp.addEventListener('wheel', onWheel, {passive:false});
+}
+
+function dist(t1,t2){
+  return Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+}
+
+function onTouchStart(e){
+  if(e.touches.length===2){
+    lastDist = dist(e.touches[0], e.touches[1]);
+    e.preventDefault();
+  } else if(e.touches.length===1){
+    if(zoom>1){
+      isPanning = true;
+      lastPan = { x:e.touches[0].clientX-panX, y:e.touches[0].clientY-panY };
+      e.preventDefault();
+    } else {
+      swipeStart = { x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
+    }
+  }
+}
+
+function onTouchMove(e){
+  if(e.touches.length===2){
+    const d = dist(e.touches[0], e.touches[1]);
+    if(lastDist>0){
+      zoom = Math.min(5, Math.max(1, zoom*(d/lastDist)));
+      if(zoom<=1){ zoom=1; panX=0; panY=0; }
+    }
+    lastDist = d;
+    applyTransform();
+    e.preventDefault();
+  } else if(isPanning && e.touches.length===1){
+    panX = e.touches[0].clientX - lastPan.x;
+    panY = e.touches[0].clientY - lastPan.y;
+    applyTransform();
+    e.preventDefault();
+  }
+}
+
+function onTouchEnd(e){
+  lastDist = 0; isPanning = false;
+  if(swipeStart && e.changedTouches.length===1 && zoom<=1){
+    const dx = e.changedTouches[0].clientX - swipeStart.x;
+    const dy = e.changedTouches[0].clientY - swipeStart.y;
+    const dt = Date.now() - swipeStart.t;
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && dt<400){
+      navPage(dx>0 ? -1 : 1); // RTL: swipe right = prev, left = next
+    }
+  }
+  swipeStart = null;
+}
+
+function onWheel(e){
+  if(!document.getElementById('page-view').classList.contains('open')) return;
+  e.preventDefault();
+  zoom = Math.min(5, Math.max(1, zoom - e.deltaY*0.002));
+  if(zoom<=1){ zoom=1; panX=0; panY=0; }
+  applyTransform();
+}
+
+/* ═══════════════════════════════════════════
+   UI HELPERS
+   ═══════════════════════════════════════════ */
+function fillBg(ratio){
+  if(ratio<=0) return 'transparent';
+  if(ratio<.25) return '#1e3a1e';
+  if(ratio<.5)  return '#245224';
+  if(ratio<.75) return '#2d652d';
+  if(ratio<1)   return '#357535';
+  return '#3d8a3d';
+}
+function borderCol(ratio){
+  if(ratio<=0) return 'var(--bdr)';
+  if(ratio<.5) return '#2a5a2a';
+  if(ratio<1)  return '#3d7a3d';
+  return 'var(--gf)';
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById('main-hdr').style.display = (tab==='home' || tab==='surahs') ? '' : 'none';
+  if(tab==='today') renderToday();
+  if(tab==='stats') renderStats();
+  if(tab==='surahs') renderSurahs();
+  if(tab==='search') document.getElementById('search-input').focus();
+  if(tab==='settings'){ renderBackups(); updateCacheStatus(); applySettings(); }
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ═══════════════════════════════════════════
+   HOME
+   ═══════════════════════════════════════════ */
+function buildHome(){
+  const memCount = Object.keys(MEM).filter(p=>isMem(p)).length;
+  const pct = Math.round((memCount/TOTAL_PAGES)*100);
+  const fullJuz = JUZ.filter(j=>j.pages.every(pg=>isMem(pg.p))).length;
+
+  document.getElementById('tot-pct').textContent = pct+'%';
+  document.getElementById('tot-bar').style.width = pct+'%';
+  document.getElementById('tot-pg-lbl').textContent = `${AR(memCount)} / 604 صفحة`;
+  document.getElementById('tot-jz-lbl').textContent = `${AR(fullJuz)} / 30 جزء مكتمل`;
+
+  const grid = document.getElementById('juz-grid');
+  grid.innerHTML = '';
+  JUZ.forEach((juz, i)=>{
+    const total = juz.pages.length;
+    const mem = juz.pages.filter(pg=>isMem(pg.p)).length;
+    const ratio = mem/total;
+    const pctJ = Math.round(ratio*100);
+    let dotsHtml = '';
+    if(mem>0 && mem<total){
+      const n = Math.min(mem, 6);
+      dotsHtml = `<div class="juz-dots">${'<div class="dot"></div>'.repeat(n)}</div>`;
+    }
+    const card = document.createElement('div');
+    card.className = 'juz-card';
+    card.style.borderColor = borderCol(ratio);
+    if(ratio===1) card.style.boxShadow='0 0 10px rgba(111,207,111,.25)';
+    card.innerHTML = `
+      <div class="juz-fill" style="height:${Math.round(ratio*100)}%;background:${fillBg(ratio)}"></div>
+      ${dotsHtml}
+      <div class="juz-check" style="opacity:${ratio===1?1:0}">✓</div>
+      <div class="juz-num">${AR_JUZ[i]}</div>
+      <div class="juz-pct" style="color:${mem>0?'var(--gf)':'var(--muted)'}">${pctJ>0?pctJ+'%':'—'}</div>`;
+    card.addEventListener('click', ()=>openJuzView(i));
+    grid.appendChild(card);
+  });
+}
+
+function quickJump(){
+  const v = parseInt(parseArNum(document.getElementById('quick-jump-input').value), 10);
+  if(v>=1 && v<=604) openPageView(v);
+  else showToast('أدخل رقم صفحة بين ١ و ٦٠٤');
+}
+
+/* ═══════════════════════════════════════════
+   JUZ VIEW
+   ═══════════════════════════════════════════ */
+function openJuzView(juzIdx){
+  curJuz = juzIdx;
+  document.getElementById('v-title').textContent = 'الجزء ' + AR_JUZ[juzIdx];
+  renderJuzView();
+  document.getElementById('juz-view').classList.add('open');
+}
+function closeJuzView(){
+  document.getElementById('juz-view').classList.remove('open');
+  buildHome();
+  curJuz = null;
+}
+function renderJuzView(){
+  if(curJuz===null) return;
+  const juz = JUZ[curJuz];
+  const total = juz.pages.length;
+  const mem = juz.pages.filter(pg=>isMem(pg.p)).length;
+  const pct = Math.round((mem/total)*100);
+  document.getElementById('v-badge').textContent = pct+'%';
+  document.getElementById('j-prog').style.width = pct+'%';
+  document.getElementById('j-prog-lbl').textContent = `${AR(mem)} صفحة محفوظة`;
+  document.getElementById('j-total-lbl').textContent = `من ${AR(total)} صفحة`;
+  const grid = document.getElementById('pages-grid');
+  grid.innerHTML = '';
+  juz.pages.forEach(pg=>{
+    const m = isMem(pg.p);
+    const card = document.createElement('div');
+    card.className = 'page-card'+(m?' mem':'');
+    card.dataset.p = pg.p;
+    card.innerHTML = `<div class="page-check">✓</div><div class="page-num">${AR(pg.p)}</div><div class="page-surah">${pg.s}</div>`;
+    card.addEventListener('click', ()=>openPageView(pg.p));
+    grid.appendChild(card);
+  });
+}
+
+function bulkSetJuz(val){
+  if(curJuz===null) return;
+  JUZ[curJuz].pages.forEach(pg=>setMem(pg.p, val));
+  saveStorage();
+  renderJuzView();
+  showToast(val ? 'تم تسجيل الجزء كاملاً 🌟' : 'تم مسح الجزء');
+}
+
+/* ═══════════════════════════════════════════
+   PAGE READER
+   ═══════════════════════════════════════════ */
+async function openPageView(pageNum){
+  curPage = pageNum;
+  if(!PAGE_META[pageNum]) await fetchPageMeta(pageNum);
+  const surah = getSurahName(pageNum);
+  document.getElementById('pv-num').textContent = 'صفحة '+AR(pageNum)+' · جزء '+AR_JUZ[getJuzForPage(pageNum)-1];
+  document.getElementById('pv-surah').textContent = 'سورة '+surah;
+  document.getElementById('pv-fallback-link').href = `https://quran.com/page/${pageNum}`;
+  document.getElementById('pv-prev').disabled = pageNum<=1;
+  document.getElementById('pv-next').disabled = pageNum>=TOTAL_PAGES;
+  updatePageViewUI();
+  applyPageViewportTheme();
+  loadPageImage(pageNum);
+  document.getElementById('page-view').classList.add('open');
+}
+
+function closePageView(){
+  document.getElementById('page-view').classList.remove('open');
+  curPage = null;
+  resetZoom();
+}
+
+function navPage(dir){
+  if(curPage===null) return;
+  const next = curPage + dir;
+  if(next>=1 && next<=TOTAL_PAGES) openPageView(next);
+}
+
+function updatePageViewUI(){
+  const m = isMem(curPage);
+  const btn = document.getElementById('pv-mem-btn');
+  btn.textContent = m ? '↩ إلغاء تسجيل الحفظ' : '✓ تم الحفظ';
+  btn.classList.toggle('active', m);
+  document.getElementById('pv-review-btn').style.display = m ? '' : 'none';
+  const card = document.querySelector(`.page-card[data-p="${curPage}"]`);
+  if(card) card.className = 'page-card'+(m?' mem':'');
+}
+
+function toggleCurrentPage(){
+  if(curPage===null) return;
+  const was = isMem(curPage);
+  setMem(curPage, !was);
+  saveStorage();
+  updatePageViewUI();
+  renderJuzView();
+  buildHome();
+  renderSurahs(document.getElementById('surah-filter')?.value);
+  showToast(was ? 'تم إلغاء تسجيل الصفحة' : 'ما شاء الله! صفحة محفوظة 🌿');
+}
+
+/* ═══════════════════════════════════════════
+   TODAY — spaced repetition review
+   ═══════════════════════════════════════════ */
+function getDuePages(){
+  const now = Date.now();
+  const due = [];
+  Object.keys(MEM).forEach(p=>{
+    if(!isMem(p)) return;
+    const e = MEM[p];
+    if(!e.nr || e.nr <= now) due.push({ page:+p, overdue: e.nr && e.nr < now - 86400000 });
+  });
+  due.sort((a,b) => (MEM[a.page].nr||0) - (MEM[b.page].nr||0));
+  return due;
+}
+
+function renderToday(){
+  const due = getDuePages();
+  document.getElementById('today-count').textContent = AR(due.length);
+  document.getElementById('today-sub').textContent = due.length ? 'صفحة تحتاج مراجعة اليوم' : 'لا توجد مراجعات اليوم — بارك الله في حفظك!';
+  const list = document.getElementById('review-list');
+  if(!due.length){
+    list.innerHTML = '<div class="empty-state">🌿 ممتاز! لا توجد صفحات مستحقة للمراجعة.<br>استمر في الحفظ الجديد.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  due.forEach(({page, overdue})=>{
+    const e = MEM[page];
+    const daysSince = e.lr ? Math.floor((Date.now()-e.lr)/86400000) : Math.floor((Date.now()-(e.d||0))/86400000);
+    const item = document.createElement('div');
+    item.className = 'review-item'+(overdue?' overdue':'');
+    item.innerHTML = `
+      <div class="review-pg">${AR(page)}</div>
+      <div class="review-info">
+        <div class="review-surah">سورة ${getSurahName(page)} · جزء ${AR_JUZ[getJuzForPage(page)-1]}</div>
+        <div class="review-meta">${overdue?'⚠️ متأخرة · ':''}آخر مراجعة: ${daysSince===0?'اليوم':daysSince+' يوم'}</div>
+      </div>
+      <button class="review-btn">مراجعة</button>`;
+    item.addEventListener('click', ()=>openPageView(page));
+    list.appendChild(item);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   STATISTICS
+   ═══════════════════════════════════════════ */
+function renderStats(){
+  const now = new Date();
+  const weekAgo = now - 7*86400000;
+  const monthAgo = now - 30*86400000;
+
+  const weekMem = HISTORY.filter(h=>h.t==='mem' && h.d>=weekAgo).length;
+  const monthMem = HISTORY.filter(h=>h.t==='mem' && h.d>=monthAgo).length;
+  const weekRev = HISTORY.filter(h=>h.t==='review' && h.d>=weekAgo).length;
+
+  document.getElementById('stat-week').textContent = AR(weekMem);
+  document.getElementById('stat-month').textContent = AR(monthMem);
+  document.getElementById('stat-reviewed').textContent = AR(weekRev);
+  document.getElementById('stat-streak').textContent = AR(calcStreak());
+
+  renderChart('chart-week', 7, 'day');
+  renderChart('chart-month', 4, 'week');
+}
+
+function calcStreak(){
+  const days = new Set(HISTORY.filter(h=>h.t==='mem'||h.t==='review').map(h=>{
+    const d = new Date(h.d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }));
+  let streak = 0;
+  const today = new Date();
+  for(let i=0; i<365; i++){
+    const d = new Date(today - i*86400000);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(days.has(key)) streak++;
+    else if(i>0) break;
+  }
+  return streak;
+}
+
+function renderChart(id, count, mode){
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  const now = new Date();
+  let max = 1;
+  const data = [];
+  for(let i=count-1; i>=0; i--){
+    let start, end, label;
+    if(mode==='day'){
+      const d = new Date(now - i*86400000);
+      start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      end = start + 86400000;
+      label = d.toLocaleDateString('ar-EG',{weekday:'short'});
+    } else {
+      start = now - (i+1)*7*86400000;
+      end = now - i*7*86400000;
+      label = `أ${count-i}`;
+    }
+    const val = HISTORY.filter(h=>h.t==='mem' && h.d>=start && h.d<end).length;
+    data.push({ val, label });
+    if(val>max) max=val;
+  }
+  data.forEach(({val,label})=>{
+    const wrap = document.createElement('div');
+    wrap.style.flex='1'; wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center';
+    const bar = document.createElement('div');
+    bar.className='chart-bar';
+    bar.style.height = Math.max(2, (val/max)*70)+'px';
+    bar.title = AR(val);
+    const lbl = document.createElement('div');
+    lbl.className='chart-bar-lbl'; lbl.textContent=label;
+    wrap.appendChild(bar); wrap.appendChild(lbl);
+    el.appendChild(wrap);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SURAHS LIST
+   ═══════════════════════════════════════════ */
+function renderSurahs(filter){
+  const list = document.getElementById('surah-list');
+  if(!SURAHS.length){
+    list.innerHTML = '<div class="empty-state">جارٍ تحميل السور...</div>';
+    return;
+  }
+  const fq = filter ? normalizeArabic(parseArNum(filter.trim())) : '';
+  const items = SURAHS.filter(ch => {
+    if(!fq) return true;
+    return normalizeArabic(ch.name).includes(fq) || String(ch.id) === fq;
+  });
+  if(!items.length){
+    list.innerHTML = '<div class="empty-state">لا توجد سورة بهذا الاسم</div>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(ch => {
+    const prog = getSurahProgress(ch);
+    const el = document.createElement('div');
+    el.className = 'surah-item';
+    el.innerHTML = `
+      <div class="surah-num">${AR(ch.id)}</div>
+      <div class="surah-info">
+        <div class="surah-name">${ch.name}</div>
+        <div class="surah-meta">${ch.place==='makkah'?'مكية':'مدنية'} · ${AR(ch.verses)} آية · ص ${AR(ch.pageStart)}${ch.pageEnd!==ch.pageStart?'–'+AR(ch.pageEnd):''}</div>
+      </div>
+      <div class="surah-prog">
+        <div class="surah-pct">${prog.pct>0?prog.pct+'%':'—'}</div>
+        <div class="surah-pg-lbl">${AR(prog.mem)}/${AR(prog.total)}</div>
+      </div>`;
+    el.addEventListener('click', ()=>openPageView(ch.pageStart));
+    list.appendChild(el);
+  });
+}
+
+function filterSurahs(){
+  renderSurahs(document.getElementById('surah-filter').value);
+}
+
+/* ═══════════════════════════════════════════
+   SEARCH
+   ═══════════════════════════════════════════ */
+function doSearch(){
+  const raw = document.getElementById('search-input').value.trim();
+  const results = document.getElementById('search-results');
+  if(!raw){ results.innerHTML=''; return; }
+
+  const q = parseArNum(raw);
+  const nq = normalizeArabic(q);
+  let matches = [];
+
+  const num = parseInt(q, 10);
+  if(!isNaN(num) && num >= 1 && num <= TOTAL_PAGES){
+    const ch = getSurahForPage(num);
+    matches.push({
+      type:'page', page:num,
+      title:`صفحة ${AR(num)}`,
+      sub: ch ? `سورة ${ch.name} · جزء ${AR_JUZ[getJuzForPage(num)-1]}` : `جزء ${AR_JUZ[getJuzForPage(num)-1]}`
+    });
+  }
+
+  SURAHS.forEach(ch => {
+    const name = normalizeArabic(ch.name);
+    if(name.includes(nq) || String(ch.id) === q){
+      if(!matches.find(m => m.type==='surah' && m.page===ch.pageStart))
+        matches.push({
+          type:'surah', page: ch.pageStart, surahId: ch.id,
+          title: ch.name,
+          sub: `${ch.place==='makkah'?'مكية':'مدنية'} · ص ${AR(ch.pageStart)}–${AR(ch.pageEnd)} · ${AR(ch.verses)} آية`
+        });
+    }
+  });
+
+  matches = matches.slice(0, 60);
+  results.innerHTML = matches.length ? '' : '<div class="empty-state">لا توجد نتائج لـ «'+raw+'»</div>';
+  matches.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'search-result';
+    el.innerHTML = `<div><div class="sr-surah">${m.title}</div><div class="sr-sub">${m.sub}</div></div><span class="sr-page">${m.type==='page'?AR(m.page):'→'}</span>`;
+    el.addEventListener('click', ()=>openPageView(m.page));
+    results.appendChild(el);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT / IMPORT
+   ═══════════════════════════════════════════ */
+function exportData(){
+  const data = { version:2, exported:Date.now(), mem:MEM, history:HISTORY, meta:PAGE_META, settings:SETTINGS };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `hifz-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('تم تصدير البيانات');
+}
+
+function importData(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!confirm('استيراد البيانات سيُدمج مع بياناتك الحالية. متابعة؟')) return;
+      if(data.mem) Object.assign(MEM, data.mem);
+      if(data.history) HISTORY = [...HISTORY, ...(data.history||[])];
+      if(data.meta) Object.assign(PAGE_META, data.meta);
+      if(data.settings) Object.assign(SETTINGS, data.settings);
+      saveStorage(); saveMeta(); saveSettings(); applySettings(); buildJuzStructure(); buildHome(); renderSurahs();
+      showToast('تم استيراد البيانات بنجاح');
+    } catch(err){ showToast('ملف غير صالح'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function renderBackups(){
+  const el = document.getElementById('backup-list');
+  if(!BACKUPS.length){ el.innerHTML='<div class="backup-item">لا توجد نسخ احتياطية بعد</div>'; return; }
+  el.innerHTML = '';
+  BACKUPS.slice(0,5).forEach((b,i)=>{
+    const d = new Date(b.date);
+    const pages = Object.keys(b.mem||{}).filter(p=>b.mem[p]?.m).length;
+    const item = document.createElement('div');
+    item.className='backup-item';
+    item.innerHTML = `<span>${d.toLocaleString('ar-EG')} · ${AR(pages)} صفحة</span>
+      <button class="backup-restore" onclick="restoreBackup(${i})">استعادة</button>`;
+    el.appendChild(item);
+  });
+}
+
+function restoreBackup(idx){
+  if(!confirm('استعادة هذه النسخة؟')) return;
+  const b = BACKUPS[idx];
+  MEM = b.mem || {};
+  HISTORY = b.history || [];
+  saveStorage(); buildHome(); showToast('تمت الاستعادة');
+}
+
+function confirmReset(){
+  if(confirm('هل تريد مسح كل التقدم؟')){
+    MEM={}; HISTORY=[]; saveStorage(); buildHome(); showToast('تم إعادة التعيين');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PWA & SERVICE WORKER
+   ═══════════════════════════════════════════ */
+function setupPWA(){
+  const manifest = {
+    name:'متابع الحفظ', short_name:'حفظي', description:'متابعة حفظ القرآن الكريم',
+    start_url:'.', display:'standalone', orientation:'portrait',
+    background_color:'#0f1a0f', theme_color:'#0f1a0f', lang:'ar', dir:'rtl',
+    icons:[
+      {src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect fill="#0f1a0f" width="512" height="512" rx="80"/><text x="256" y="300" text-anchor="middle" font-size="200" fill="#6fcf6f">📖</text></svg>'), sizes:'512x512', type:'image/svg+xml', purpose:'any maskable'}
+    ]
+  };
+  document.getElementById('pwa-manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/json'}));
+
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); deferredInstall = e;
+    document.getElementById('install-btn').style.display = '';
+  });
+
+  if('serviceWorker' in navigator){
+    const swCode = `
+      const CACHE='hifz-v2';
+      self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE))});
+      self.addEventListener('activate',e=>{e.waitUntil(clients.claim())});
+      self.addEventListener('fetch',e=>{
+        const u=e.request.url;
+        if(u.includes('madina_images')||u.includes('Quran-Data')||u.includes('islam-db.com')||u.includes('islamic.app')||u.includes('api.quran.com')||u.includes('fonts.googleapis')||u.includes('fonts.gstatic')){
+          e.respondWith(caches.open(CACHE).then(c=>
+            c.match(e.request).then(r=>r||fetch(e.request).then(resp=>{
+              if(resp.ok) c.put(e.request,resp.clone());
+              return resp;
+            }).catch(()=>r))
+          ));
+        }
+      });
+    `;
+    const blob = new Blob([swCode],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  }
+}
+
+function installPWA(){
+  if(deferredInstall){ deferredInstall.prompt(); deferredInstall=null; }
+  else showToast('استخدم "إضافة إلى الشاشة الرئيسية" من المتصفح');
+}
+
+function updateOnlineStatus(){
+  const online = navigator.onLine;
+  document.getElementById('online-status').textContent = online ? 'متصل بالإنترنت' : 'غير متصل — البيانات المحلية متاحة';
+  const badge = document.getElementById('offline-badge');
+  badge.textContent = online ? '● متصل' : '● دون اتصال';
+  badge.classList.toggle('off', !online);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════ */
+async function init(){
+  loadStorage();
+  applySettings();
+  setupPWA();
+  setupZoomPan();
+  updateOnlineStatus();
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){
+      if(document.getElementById('page-view').classList.contains('open')) closePageView();
+      else if(document.getElementById('juz-view').classList.contains('open')) closeJuzView();
+    }
+    if(document.getElementById('page-view').classList.contains('open')){
+      if(e.key==='ArrowLeft') navPage(1);
+      if(e.key==='ArrowRight') navPage(-1);
+    }
+  });
+
+  document.getElementById('quick-jump-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter') quickJump();
+  });
+
+  try {
+    await fetchChapters();
+    buildJuzStructure();
+    buildHome();
+    renderSurahs();
+    document.getElementById('loader').classList.add('hide');
+
+    // Load page metadata in background without blocking the app
+    if(Object.keys(PAGE_META).length < TOTAL_PAGES){
+      loadAllMeta(pct => {
+        document.getElementById('loader-prog').style.width = pct+'%';
+      }).then(() => {
+        buildJuzStructure();
+        buildHome();
+        if(curJuz !== null) renderJuzView();
+      }).catch(()=>{});
+    }
+  } catch(e){
+    buildJuzStructure();
+    buildHome();
+    document.getElementById('loader').classList.add('hide');
+    showToast('تعذّر تحميل API — يعمل بالبيانات المحلية');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
